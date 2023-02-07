@@ -59,7 +59,7 @@ class DebtorViewset(viewsets.ModelViewSet):
     #overiding the create method for validation and other additions
     def create(self, request, *args, **kwargs):
         debtor_data = request.data
-
+        
         #creating new debtor object
         new_debtor = Debtor.objects.create(
             user = request.user,
@@ -77,7 +77,7 @@ class DebtorViewset(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         debtor = Debtor.objects.filter(
-            Q(name__icontains =  'chiedza')|
+            Q(name__icontains = '')|
             Q(created__icontains =  '')|
             Q(payment__deposit__icontains =  '')|
             Q(payment__first_payment__icontains = '')|
@@ -99,12 +99,13 @@ class workViewset(viewsets.ModelViewSet):
     
     #get query for debtors list
     def get_queryset(self):
-        debtor = Debtor.objects.all() #use post view
+        debtor = Work.objects.all() #use post view
         return debtor
 
     def createWork(self, request, *args, **kwargs):
         data = request.data
-
+        params = kwargs
+        print(params)
         work = Work.objects.create(
             debtor = data['debtor'],
             employer = data['employer'],
@@ -115,26 +116,17 @@ class workViewset(viewsets.ModelViewSet):
         serializer = workSerializer(work)
         return Response(serializer.data)
 
-class workAPIView(APIView):
-    serializers = workSerializer
-    def get_queryset(self):
-        debtors = Work.objects.all() #use post view
-        return debtors
-
-    def get(self, request, *args, **kwargs):
-        work = self.get_queryset()
-        serializer = workSerializer(work, many=True)
-
-        return Response(serializer.data)
     
-    def post(self, request, *args, **kwargs):
-        data = request.data
-        work = Work.objects.create(
-            debtor = data['debtor'],
-            employer = data['employer'],
-            address = data['address'],
-            phonenumber = data['phonenumber']
-        )
-        work.save()
-        serializer = workSerializer(work)
-        return Response(serializer.data)
+    def delete(self, request, *args, **kwargs):
+        if request.user.position == 'admin':
+            work = self.get_object()
+            work.delete()
+            return Response(f'{work} deleted')
+
+class ProductViewset(viewsets.ModelViewSet):
+    serializer_class =  productSerializer
+
+    def get_queryset(self):
+        product = Product.objects.all() 
+        return product
+    
