@@ -2,8 +2,9 @@ from api.models import *
 from rest_framework import serializers
 
 class debtorSerializer(serializers.ModelSerializer):
-    work = serializers.StringRelatedField()
-    product = serializers.StringRelatedField()
+    # work = serializers.StringRelatedField()
+    # product = serializers.StringRelatedField()
+    # payment = serializers.StringRelatedField()
     class Meta:
         model = Debtor
         fields = '__all__'

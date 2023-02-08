@@ -28,10 +28,10 @@ class Debtor(models.Model):
     
 
     def __str__(self):
-        return self.name
+        return f"{self.name} {self.surname}"
 
 class Product(models.Model):
-    debtor = models.OneToOneField("api.Debtor", related_name='product',  on_delete=models.CASCADE, primary_key=True)
+    debtor = models.ForeignKey("api.Debtor", on_delete=models.CASCADE)
     product = models.CharField(max_length=50)
     product_serial_no = models.CharField(max_length=50)
     product_selling_price = models.DecimalField(max_digits=6, decimal_places=2, null = True, blank = True, default= 0)
@@ -40,7 +40,7 @@ class Product(models.Model):
     def __str__(self) -> str:
         return f'{self.product}'
 class Payment(models.Model):
-    product = models.OneToOneField("api.Product", related_name='payment', on_delete=models.CASCADE, primary_key=True)
+    product = models.OneToOneField("api.Product", on_delete=models.CASCADE, primary_key=True)
     deposit = models.DecimalField(max_digits=6, decimal_places=2, null = True, blank = True, default= 0)
     first_payment = models.DecimalField(max_digits=6, decimal_places=2,  default= 0, null = True, blank = True)
     second_payment = models.DecimalField(max_digits=6, decimal_places=2,   default= 0, null = True, blank = True)

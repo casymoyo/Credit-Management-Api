@@ -47,26 +47,36 @@ def Dashboard(request):
     }
     return Response(context)
 
-#debtor viewset
 class DebtorViewset(viewsets.ModelViewSet):
     serializer_class = debtorSerializer
 
     #get query for debtors list
     def get_queryset(self):
-        queryset = Debtor.objects.all()
+        queryset = Debtor.objects.filter(user = self.request.user.id)
         return queryset
     
     #overiding the create method for validation and other additions
     def create(self, request, *args, **kwargs):
         debtor_data = request.data
-        
+
+        #validation
+        if request.data['gender'].lower() == 'male' or request.data['gender'].lower() == 'female':
+            gender = request.data['gender'].lower()
+        else: return Response('Invalid Gender')
+
+        if len(request.data['phonenumber']) != 10:
+            return Response('Invalid phonenumber')
+
+        if len(request.data['id_number']) != 10:
+            return Response('Invalid ID Number')
+
         #creating new debtor object
         new_debtor = Debtor.objects.create(
             user = request.user,
             name = debtor_data['name'],
             maiden = debtor_data['maiden'],
             surname = debtor_data['surname'],
-            gender = debtor_data['gender'],
+            gender = gender,
             address = debtor_data['address'],
             phonenumber = debtor_data['phonenumber'],
             id_number = debtor_data['id_number']
@@ -83,15 +93,15 @@ class DebtorViewset(viewsets.ModelViewSet):
             Q(payment__deposit__icontains =  params['pk'])|
             Q(payment__first_payment__icontains = params['pk'])|
             Q(payment__second_payment__icontains = params['pk'])|
-            Q(payment__final_payment__icontains = params['pk'])|
+            Q(payment__final_payment__icontains = params ['pk'])|
             Q(work__employer__contains = params['pk'])
-        )
+        ) & Debtor.objects.filter(user = request.user)
         serializer = debtorSerializer(debtor, many =True)
         return Response(serializer.data)
     
-    def put(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         data = request.data
-        debtor = Debtor.objects.all()
+        debtor = Debtor.objects.filter(user = request.user.id)
 
         debtor.name = data['name']
         debtor.maiden = data['maiden']
@@ -115,8 +125,8 @@ class workViewset(viewsets.ModelViewSet):
     
     #get query for debtors list
     def get_queryset(self):
-        debtor = Work.objects.all() #use post view
-        return debtor
+        work = Work.objects.filter(debtor__user = self.request.user.id) 
+        return work
 
     def createWork(self, request, *args, **kwargs):
         data = request.data
