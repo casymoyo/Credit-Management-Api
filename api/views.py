@@ -76,18 +76,34 @@ class DebtorViewset(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
+        params = kwargs
         debtor = Debtor.objects.filter(
-            Q(name__icontains = '')|
-            Q(created__icontains =  '')|
-            Q(payment__deposit__icontains =  '')|
-            Q(payment__first_payment__icontains = '')|
-            Q(payment__second_payment__icontains = '')|
-            Q(payment__final_payment__icontains = '')|
-            Q(work__employer__contains = '')
+            Q(name__icontains = params['pk'])|
+            Q(created__icontains =  params['pk'])|
+            Q(payment__deposit__icontains =  params['pk'])|
+            Q(payment__first_payment__icontains = params['pk'])|
+            Q(payment__second_payment__icontains = params['pk'])|
+            Q(payment__final_payment__icontains = params['pk'])|
+            Q(work__employer__contains = params['pk'])
         )
         serializer = debtorSerializer(debtor, many =True)
         return Response(serializer.data)
     
+    def put(self, request, *args, **kwargs):
+        data = request.data
+        debtor = Debtor.objects.all()
+
+        debtor.name = data['name']
+        debtor.maiden = data['maiden']
+        debtor.surname = data['surname']
+        debtor.gender = data['gender']
+        debtor.address = data['address']
+        debtor.phonenumber = data['phonenumber']
+
+        debtor.save()
+        serializer = debtorSerializer(debtor)
+        return Response(serializer)
+
     def delete(self, request, *args, **kwargs):
         if request.user.position == 'admin':
             debtor = self.get_object()
@@ -125,8 +141,64 @@ class workViewset(viewsets.ModelViewSet):
 
 class ProductViewset(viewsets.ModelViewSet):
     serializer_class =  productSerializer
-
-    def get_queryset(self):
-        product = Product.objects.all() 
-        return product
+    queryset = Product.objects.all()
     
+class PaymentViewset(viewsets.ModelViewSet):
+    serializer_class = paymentSerializer
+    queryset = Payment.objects.all()
+    
+
+@api_view()
+@permission_classes([AllowAny])
+def overdues(request):
+    debtors = Debtor.objects.filter(user = request.user.id)
+
+    # dues
+    debtor_due_in_30 = debtors.filter(payment__first_payment_due_date__lte = date.today()) & Debtor.objects.filter(payment__first_payment__lte = 0)
+    debtor_due_in_60 = debtors.filter(payment__second_payment_due_date__lte = date.today()) & Debtor.objects.filter(payment__second_payment__lte = 0)
+    debtor_due_in_90 = debtors.filter(payment__final_payment_due_date__lte = date.today())& Debtor.objects.filter(payment__final_payment__lte = 0)
+
+    context = {
+        'overdue_30': debtor_due_in_30,
+        'overdue_60': debtor_due_in_60,
+        'overdue_90': debtor_due_in_90,
+    }
+    return Response(context)
+
+@api_view()
+@permission_classes([AllowAny])
+def overdues30(request):
+    debtors = Debtor.objects.filter(user = request.user.id)
+
+    # dues
+    debtor_due_in_30 = debtors.filter(payment__first_payment_due_date__lte = date.today()) & Debtor.objects.filter(payment__first_payment__lte = 0)
+
+    context = {
+        'overdue_30': debtor_due_in_30,
+    }
+    return Response(context)
+
+@api_view()
+@permission_classes([AllowAny])
+def overdues60(request):
+    debtors = Debtor.objects.filter(user = request.user.id)
+
+    # dues
+    debtor_due_in_60 = debtors.filter(payment__second_payment_due_date__lte = date.today()) & Debtor.objects.filter(payment__second_payment__lte = 0)
+    context = {
+        'overdue_60': debtor_due_in_60,
+    }
+    return Response(context)
+
+@api_view()
+@permission_classes([AllowAny])
+def overdues90(request):
+    debtors = Debtor.objects.filter(user = request.user.id)
+
+    # dues
+    debtor_due_in_90 = debtors.filter(payment__final_payment_due_date__lte = date.today())& Debtor.objects.filter(payment__final_payment__lte = 0)
+
+    context = {
+        'overdue_90': debtor_due_in_90,
+    }
+    return Response(context)
